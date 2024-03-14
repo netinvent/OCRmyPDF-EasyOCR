@@ -96,6 +96,17 @@ ISO_639_3_2: dict[str, str] = {
 Task = Tuple[npt.NDArray, multiprocessing.Value, threading.Event] | None
 
 
+
+class NonDaemonManager(multiprocessing.managers.BaseManager):
+    def _get_daemon(self):
+        return False
+
+    def _set_daemon(self, value):
+        pass
+
+    daemon = property(_get_daemon, _set_daemon)
+
+
 def _ocr_process(q: multiprocessing.Queue[Task], options):
     reader: Optional[easyocr.Reader] = None
 
@@ -137,14 +148,15 @@ class ProcessList:
 
 @hookimpl
 def check_options(options):
-    m = multiprocessing.Manager()
+    #m = multiprocessing.Manager()
+    m = NonDaemonManager()
     q = multiprocessing.Queue(-1)
     ocr_process_list = []
     for _ in range(options.easyocr_workers):
-        t = multiprocessing.Process(target=_ocr_process, args=(q, options), daemon=True)
-        t.start()
-        ocr_process_list.append(t)
-
+        #t = multiprocessing.Process(target=_ocr_process, args=(q, options), daemon=False)
+        #t.start()
+        #ocr_process_list.append(t)
+        pass
     options._easyocr_struct = {"manager": m, "queue": q}
     options._easyocr_plist = ProcessList(ocr_process_list)
 
